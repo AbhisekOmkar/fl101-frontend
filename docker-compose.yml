@@ -1,0 +1,9 @@
+services:
+  frontend:
+    build: .
+    container_name: fl101-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    restart: unless-stopped

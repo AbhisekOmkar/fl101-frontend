@@ -1,0 +1,123 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ------------------------------------------------------------------ */
+/* fl101 design tokens — "Cloves"-inspired                            */
+/*                                                                    */
+/* Page background sits on a pale periwinkle. App surfaces are white. */
+/* Primary + accent = vivid blue. Chart palette: blue / emerald /     */
+/* amber / violet — violet is used ONLY in chart slices, never as a   */
+/* brand surface.                                                     */
+/* ------------------------------------------------------------------ */
+
+@layer base {
+  :root {
+    --background: 226 100% 97%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    /* Primary = blue-600 vivid */
+    --primary: 221 83% 53%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 222 47% 11%;
+
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
+
+    --accent: 221 83% 53%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 152 76% 40%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --border: 220 16% 92%;
+    --input: 220 16% 92%;
+    --ring: 221 83% 53%;
+
+    --radius: 0.875rem;
+
+    /* Chart palette */
+    --chart-1: 217 91% 60%;  /* sky-blue — main */
+    --chart-2: 152 70% 50%;  /* emerald */
+    --chart-3: 32 95% 58%;   /* orange */
+    --chart-4: 258 90% 70%;  /* violet — donut only */
+    --chart-5: 200 18% 46%;  /* slate */
+  }
+
+  .dark {
+    --background: 222 47% 7%;
+    --foreground: 210 40% 98%;
+    --card: 222 47% 9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222 47% 9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 221 83% 60%;
+    --primary-foreground: 222 47% 7%;
+    --secondary: 217 32% 17%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217 32% 17%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 221 83% 60%;
+    --accent-foreground: 222 47% 7%;
+    --destructive: 0 62% 41%;
+    --destructive-foreground: 210 40% 98%;
+    --success: 152 70% 45%;
+    --success-foreground: 222 47% 7%;
+    --warning: 38 92% 55%;
+    --warning-foreground: 222 47% 7%;
+    --border: 217 32% 17%;
+    --input: 217 32% 17%;
+    --ring: 221 83% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1;
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+  /* Tighter heading rhythm — closer to the Cloves spec */
+  h1, h2, h3 {
+    letter-spacing: -0.02em;
+  }
+}
+
+/* --- Custom utility classes --- */
+
+.shimmer-bg {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--muted)) 0%,
+    hsl(var(--secondary)) 50%,
+    hsl(var(--muted)) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s linear infinite;
+}
+
+/* Stat card big number style */
+.metric-num {
+  @apply font-bold tracking-tight tabular-nums;
+  font-feature-settings: "tnum" 1, "ss01" 1;
+  letter-spacing: -0.04em;
+}

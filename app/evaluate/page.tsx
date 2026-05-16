@@ -1,11 +1,12 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { Asterisk, User } from "lucide-react";
+import { User } from "lucide-react";
 import { ChatComposer, ModeSelector } from "@/components/evaluator/ChatComposer";
 import { ResultsPanel } from "@/components/evaluator/ResultsPanel";
 import { ThinkingIndicator } from "@/components/evaluator/ThinkingIndicator";
 import { ErrorAlert } from "@/components/evaluator/ErrorAlert";
 import { Header } from "@/components/layout/Header";
+import { SparkLogo } from "@/components/brand/SparkLogo";
 import { api, ApiException } from "@/lib/api";
 import type {
   ApiError,
@@ -113,7 +114,7 @@ export default function EvaluatePage() {
           {empty ? (
             <EmptyHero />
           ) : (
-            <div className="mx-auto w-full max-w-3xl space-y-8 px-4 py-6 sm:px-6">
+            <div className="mx-auto w-full max-w-4xl space-y-8 px-4 py-6 sm:px-6">
               {turns.map((t) => (
                 <ConversationTurn key={t.id} turn={t} />
               ))}
@@ -123,7 +124,7 @@ export default function EvaluatePage() {
 
         {/* Composer */}
         <div className="shrink-0 border-t bg-background/85 backdrop-blur">
-          <div className="mx-auto w-full max-w-3xl px-4 py-4 sm:px-6">
+          <div className="mx-auto w-full max-w-4xl px-4 py-4 sm:px-6">
             <ChatComposer
               loading={loading}
               onSubmit={submit}
@@ -142,10 +143,8 @@ export default function EvaluatePage() {
 
 function AgentAvatar({ pulse = false }: { pulse?: boolean }) {
   return (
-    <span
-      className={`relative mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border bg-card shadow-sm`}
-    >
-      <Asterisk className="h-5 w-5 text-foreground" strokeWidth={2.4} />
+    <span className="relative mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border bg-card text-foreground shadow-sm">
+      <SparkLogo size={18} />
       {pulse && (
         <span className="absolute inset-0 animate-ping rounded-full bg-accent/30" />
       )}
@@ -156,8 +155,8 @@ function AgentAvatar({ pulse = false }: { pulse?: boolean }) {
 function EmptyHero() {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-6 px-6 py-16 text-center">
-      <span className="flex h-14 w-14 items-center justify-center rounded-full border bg-card shadow-sm">
-        <Asterisk className="h-7 w-7 text-foreground" strokeWidth={2.4} />
+      <span className="flex h-14 w-14 items-center justify-center rounded-full border bg-card text-foreground shadow-sm">
+        <SparkLogo size={26} />
       </span>
       <div className="space-y-2">
         <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
@@ -248,7 +247,7 @@ function ConversationTurn({ turn }: { turn: Turn }) {
               suggested={turn.error.suggested_type ?? null}
             />
           )}
-          {turn.result && <ResultsPanel result={turn.result} />}
+          {turn.result && <ResultsPanel result={turn.result} compact />}
         </div>
       </div>
     </div>

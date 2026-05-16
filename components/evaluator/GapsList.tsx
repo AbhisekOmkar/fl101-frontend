@@ -53,9 +53,11 @@ export function GapsList({ gaps }: Props) {
               onClick={() => setOpen(isOpen ? null : i)}
               className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-secondary/40"
             >
-              <span className="flex min-w-0 items-center gap-2.5">
-                <AlertTriangle className={cn("h-4 w-4 shrink-0", sev.icon)} />
-                <span className="truncate text-sm font-medium">{g.title}</span>
+              <span className="flex min-w-0 items-start gap-2.5">
+                <AlertTriangle className={cn("mt-0.5 h-4 w-4 shrink-0", sev.icon)} />
+                <span className="line-clamp-2 text-sm font-medium leading-snug">
+                  {g.title}
+                </span>
               </span>
               <span className="flex shrink-0 items-center gap-2">
                 <span

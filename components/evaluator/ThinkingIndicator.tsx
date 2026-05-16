@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
+import { SparkLogo } from "@/components/brand/SparkLogo";
 import type { ArtifactType, ConsistencyMode } from "@/lib/types";
 
 interface Props {
@@ -58,7 +59,7 @@ export function ThinkingIndicator({
   if (!active && doneMs != null) {
     return (
       <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-        <span className="text-foreground">✻</span>
+        <SparkLogo size={11} className="text-foreground" />
         Thought for {(doneMs / 1000).toFixed(1)}s
       </p>
     );

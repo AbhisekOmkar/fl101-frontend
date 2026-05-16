@@ -18,9 +18,12 @@ import type { EvaluationResponse } from "@/lib/types";
 
 interface Props {
   result: EvaluationResponse;
+  /** When rendered inside a narrow container (e.g. a chat bubble),
+   * stack the gaps + feedback cards vertically instead of side-by-side. */
+  compact?: boolean;
 }
 
-export function ResultsPanel({ result }: Props) {
+export function ResultsPanel({ result, compact = false }: Props) {
   return (
     <div className="space-y-5">
       <NextStepCard step={result.next_step} />
@@ -68,7 +71,7 @@ export function ResultsPanel({ result }: Props) {
         </CardContent>
       </Card>
 
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div className={compact ? "grid gap-5" : "grid gap-5 lg:grid-cols-2"}>
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">

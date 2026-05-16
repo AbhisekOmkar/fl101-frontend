@@ -3,7 +3,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
-  Asterisk,
   History,
   LayoutDashboard,
   MessageSquare,
@@ -13,6 +12,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
+import { SparkLogo } from "@/components/brand/SparkLogo";
 import type { EvaluationListItem } from "@/lib/types";
 
 const nav = [
@@ -42,8 +42,8 @@ export function Sidebar() {
     <aside className="sticky top-0 hidden h-screen md:flex md:w-64 md:flex-col md:border-r md:bg-card">
       {/* Brand */}
       <div className="flex h-16 shrink-0 items-center gap-2 px-5">
-        <span className="flex h-7 w-7 items-center justify-center rounded-lg border bg-card shadow-sm">
-          <Asterisk className="h-4 w-4 text-foreground" strokeWidth={2.4} />
+        <span className="flex h-7 w-7 items-center justify-center rounded-lg border bg-card text-foreground shadow-sm">
+          <SparkLogo size={14} />
         </span>
         <span className="text-sm font-semibold tracking-tight">fl101 Critic</span>
       </div>

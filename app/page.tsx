@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowUpRight,
   BookOpen,
@@ -22,9 +23,11 @@ import type { ArtifactType, DashboardStats } from "@/lib/types";
 import { cn, formatDate, scoreColor } from "@/lib/utils";
 
 export default function DashboardHome() {
+  const router = useRouter();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [healthOk, setHealthOk] = useState<boolean | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [authedChecked, setAuthedChecked] = useState(false);
 
   const load = async () => {
     setRefreshing(true);
@@ -38,8 +41,28 @@ export default function DashboardHome() {
   };
 
   useEffect(() => {
+    // On first visit, route the reviewer to the login splash.
+    let authed = false;
+    try {
+      authed = window.localStorage.getItem("fl101.demo_authed") === "1";
+    } catch {
+      authed = true; // private-mode fallback — don't gate
+    }
+    if (!authed) {
+      router.replace("/login");
+      return;
+    }
+    setAuthedChecked(true);
     load();
-  }, []);
+  }, [router]);
+
+  if (!authedChecked) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="h-2 w-2 animate-ping rounded-full bg-accent" />
+      </div>
+    );
+  }
 
   return (
     <>

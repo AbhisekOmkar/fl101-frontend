@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import {
   History,
   LayoutDashboard,
+  LogOut,
   MessageSquare,
   ScrollText,
   Settings,
@@ -26,6 +27,9 @@ const nav = [
 export function Sidebar() {
   const pathname = usePathname();
   const [recents, setRecents] = useState<EvaluationListItem[]>([]);
+
+  // The login page renders a full-bleed splash, no sidebar.
+  if (pathname?.startsWith("/login")) return null;
 
   useEffect(() => {
     let alive = true;
@@ -103,8 +107,8 @@ export function Sidebar() {
         </div>
       </div>
 
-      {/* Settings link */}
-      <div className="shrink-0 px-3 py-1">
+      {/* Settings + sign-out */}
+      <div className="shrink-0 space-y-0.5 px-3 py-1">
         <button
           type="button"
           className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground"
@@ -113,6 +117,13 @@ export function Sidebar() {
           <Settings className="h-4 w-4 shrink-0" />
           Settings
         </button>
+        <Link
+          href="/login"
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground"
+        >
+          <LogOut className="h-4 w-4 shrink-0" />
+          Sign out
+        </Link>
       </div>
 
       {/* Profile footer */}

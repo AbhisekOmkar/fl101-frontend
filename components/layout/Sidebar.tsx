@@ -3,11 +3,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
+  Asterisk,
   History,
   LayoutDashboard,
   MessageSquare,
   ScrollText,
-  Sparkles,
+  Settings,
   Target,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -16,7 +17,7 @@ import type { EvaluationListItem } from "@/lib/types";
 
 const nav = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/evaluate", label: "Evaluate", icon: MessageSquare, badge: undefined as string | undefined },
+  { href: "/evaluate", label: "Evaluate", icon: MessageSquare },
   { href: "/history", label: "History", icon: History },
   { href: "/eval", label: "Quality", icon: Target },
   { href: "/rubrics", label: "Rubrics", icon: ScrollText },
@@ -41,14 +42,14 @@ export function Sidebar() {
     <aside className="sticky top-0 hidden h-screen md:flex md:w-64 md:flex-col md:border-r md:bg-card">
       {/* Brand */}
       <div className="flex h-16 shrink-0 items-center gap-2 px-5">
-        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-          <Sparkles className="h-3.5 w-3.5" />
+        <span className="flex h-7 w-7 items-center justify-center rounded-lg border bg-card shadow-sm">
+          <Asterisk className="h-4 w-4 text-foreground" strokeWidth={2.4} />
         </span>
         <span className="text-sm font-semibold tracking-tight">fl101 Critic</span>
       </div>
 
       {/* Nav */}
-      <nav className="space-y-0.5 px-3">
+      <nav className="shrink-0 space-y-0.5 px-3">
         {nav.map((item) => {
           const active =
             item.href === "/" ? pathname === "/" : pathname?.startsWith(item.href);
@@ -68,19 +69,14 @@ export function Sidebar() {
                 <Icon className="h-4 w-4 shrink-0" />
                 {item.label}
               </span>
-              {item.badge && (
-                <span className="rounded-md bg-accent px-1.5 py-0.5 text-[10px] font-semibold text-accent-foreground">
-                  {item.badge}
-                </span>
-              )}
             </Link>
           );
         })}
       </nav>
 
-      {/* Recents */}
+      {/* Recents — scrolls internally if it overflows */}
       <div className="mt-6 flex min-h-0 flex-1 flex-col px-3">
-        <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <p className="shrink-0 px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
           Recents
         </p>
         <div className="min-h-0 flex-1 space-y-0.5 overflow-y-auto pr-1">
@@ -107,8 +103,20 @@ export function Sidebar() {
         </div>
       </div>
 
+      {/* Settings link */}
+      <div className="shrink-0 px-3 py-1">
+        <button
+          type="button"
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground"
+          onClick={() => alert("Settings coming soon. For the demo this is a placeholder.")}
+        >
+          <Settings className="h-4 w-4 shrink-0" />
+          Settings
+        </button>
+      </div>
+
       {/* Profile footer */}
-      <div className="border-t p-4">
+      <div className="shrink-0 border-t p-4">
         <div className="flex items-center gap-3">
           <span className="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-[11px] font-semibold text-accent-foreground">
             AP

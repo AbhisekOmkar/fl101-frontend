@@ -1,13 +1,12 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { BookOpen, Code2, FileText, Sparkles, User } from "lucide-react";
+import { Asterisk, User } from "lucide-react";
 import { ChatComposer, ModeSelector } from "@/components/evaluator/ChatComposer";
 import { ResultsPanel } from "@/components/evaluator/ResultsPanel";
-import { EvaluationProgress } from "@/components/evaluator/EvaluationProgress";
+import { ThinkingIndicator } from "@/components/evaluator/ThinkingIndicator";
 import { ErrorAlert } from "@/components/evaluator/ErrorAlert";
 import { Header } from "@/components/layout/Header";
 import { api, ApiException } from "@/lib/api";
-import { cn } from "@/lib/utils";
 import type {
   ApiError,
   ArtifactInput,
@@ -22,13 +21,9 @@ interface Turn {
   result: EvaluationResponse | null;
   error: ApiError | null;
   loading: boolean;
+  startedAt: number;
+  finishedAt: number | null;
 }
-
-const TYPE_META: Record<ArtifactType, { icon: typeof FileText; label: string }> = {
-  brief: { icon: FileText, label: "Brief" },
-  draft: { icon: BookOpen, label: "Draft" },
-  code: { icon: Code2, label: "Code" },
-};
 
 export default function EvaluatePage() {
   const [turns, setTurns] = useState<Turn[]>([]);
@@ -49,16 +44,27 @@ export default function EvaluatePage() {
       typeof crypto !== "undefined" && "randomUUID" in crypto
         ? crypto.randomUUID()
         : Math.random().toString(36).slice(2);
+    const startedAt = Date.now();
     setTurns((prev) => [
       ...prev,
-      { id, artifact: input, result: null, error: null, loading: true },
+      {
+        id,
+        artifact: input,
+        result: null,
+        error: null,
+        loading: true,
+        startedAt,
+        finishedAt: null,
+      },
     ]);
 
     try {
       const r = await api.evaluate(input);
       setTurns((prev) =>
         prev.map((t) =>
-          t.id === id ? { ...t, result: r, loading: false } : t,
+          t.id === id
+            ? { ...t, result: r, loading: false, finishedAt: Date.now() }
+            : t,
         ),
       );
     } catch (e) {
@@ -70,7 +76,11 @@ export default function EvaluatePage() {
               message: e instanceof Error ? e.message : "Unknown error",
             };
       setTurns((prev) =>
-        prev.map((t) => (t.id === id ? { ...t, error: err, loading: false } : t)),
+        prev.map((t) =>
+          t.id === id
+            ? { ...t, error: err, loading: false, finishedAt: Date.now() }
+            : t,
+        ),
       );
     }
   };
@@ -81,7 +91,7 @@ export default function EvaluatePage() {
     <>
       <Header title="Evaluate" />
       <div className="flex h-[calc(100vh-4rem)] flex-col">
-        {/* Mode selector strip */}
+        {/* Mode strip */}
         <div className="flex shrink-0 items-center justify-between gap-3 border-b bg-background/85 px-6 py-3 backdrop-blur">
           <div className="flex items-center gap-3">
             <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -98,15 +108,12 @@ export default function EvaluatePage() {
           </span>
         </div>
 
-        {/* Conversation area */}
-        <div
-          ref={scrollRef}
-          className="min-h-0 flex-1 overflow-y-auto"
-        >
+        {/* Conversation */}
+        <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
           {empty ? (
             <EmptyHero />
           ) : (
-            <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-6 sm:px-6">
+            <div className="mx-auto w-full max-w-3xl space-y-8 px-4 py-6 sm:px-6">
               {turns.map((t) => (
                 <ConversationTurn key={t.id} turn={t} />
               ))}
@@ -123,7 +130,7 @@ export default function EvaluatePage() {
               consistency={consistency}
             />
             <p className="mt-2 text-center text-[11px] text-muted-foreground">
-              fl101 critic returns rubric scores, gaps, and the single next-best step.
+              The critic returns rubric scores, gaps, and the single next-best step.
               Mode applies to the next message.
             </p>
           </div>
@@ -133,11 +140,24 @@ export default function EvaluatePage() {
   );
 }
 
+function AgentAvatar({ pulse = false }: { pulse?: boolean }) {
+  return (
+    <span
+      className={`relative mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border bg-card shadow-sm`}
+    >
+      <Asterisk className="h-5 w-5 text-foreground" strokeWidth={2.4} />
+      {pulse && (
+        <span className="absolute inset-0 animate-ping rounded-full bg-accent/30" />
+      )}
+    </span>
+  );
+}
+
 function EmptyHero() {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-6 px-6 py-16 text-center">
-      <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-accent text-accent-foreground">
-        <Sparkles className="h-6 w-6" />
+      <span className="flex h-14 w-14 items-center justify-center rounded-full border bg-card shadow-sm">
+        <Asterisk className="h-7 w-7 text-foreground" strokeWidth={2.4} />
       </span>
       <div className="space-y-2">
         <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
@@ -149,75 +169,76 @@ function EmptyHero() {
         </p>
       </div>
       <div className="grid w-full max-w-2xl gap-2 sm:grid-cols-3">
-        {(["brief", "draft", "code"] as ArtifactType[]).map((t) => {
-          const Icon = TYPE_META[t].icon;
-          return (
-            <div
-              key={t}
-              className="flex items-start gap-3 rounded-xl border bg-card p-3 text-left"
-            >
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-secondary">
-                <Icon className="h-4 w-4" />
-              </span>
-              <div>
-                <p className="text-sm font-semibold capitalize">{t}</p>
-                <p className="text-[11px] text-muted-foreground">
-                  {t === "brief" && "PRD, design doc, plan"}
-                  {t === "draft" && "Essay, post, analysis"}
-                  {t === "code" && "Function, snippet, module"}
-                </p>
-              </div>
-            </div>
-          );
-        })}
+        <ExampleChip
+          title="Evaluate a PRD"
+          hint="Paste a product brief or design doc"
+        />
+        <ExampleChip
+          title="Score a draft"
+          hint="Essay, post, written analysis"
+        />
+        <ExampleChip
+          title="Review a snippet"
+          hint="Function, module, code change"
+        />
       </div>
     </div>
   );
 }
 
+function ExampleChip({ title, hint }: { title: string; hint: string }) {
+  return (
+    <div className="rounded-xl border bg-card p-3 text-left">
+      <p className="text-sm font-semibold">{title}</p>
+      <p className="text-[11px] text-muted-foreground">{hint}</p>
+    </div>
+  );
+}
+
 function ConversationTurn({ turn }: { turn: Turn }) {
-  const Icon = TYPE_META[turn.artifact.artifact_type].icon;
-  const label = TYPE_META[turn.artifact.artifact_type].label;
+  const elapsed =
+    turn.finishedAt != null ? turn.finishedAt - turn.startedAt : null;
 
   return (
     <div className="space-y-4">
-      {/* User bubble */}
-      <div className="flex justify-end">
-        <div className="max-w-[85%] space-y-2">
+      {/* User bubble (right) */}
+      <div className="flex justify-end gap-3">
+        <div className="max-w-[80%] space-y-1.5">
           <div className="flex items-center justify-end gap-2 text-[11px] text-muted-foreground">
-            <span className="capitalize">{label}</span>
+            <span className="capitalize">{turn.artifact.artifact_type}</span>
             <span>·</span>
             <span>{turn.artifact.consistency} mode</span>
           </div>
-          <div className="bubble whitespace-pre-wrap bg-primary text-primary-foreground">
-            {turn.artifact.content.length > 800
-              ? `${turn.artifact.content.slice(0, 800)}…`
-              : turn.artifact.content}
+          <div className="rounded-2xl bg-accent/30 px-4 py-3 text-sm leading-relaxed text-foreground">
+            <pre className="whitespace-pre-wrap font-sans">
+              {turn.artifact.content.length > 800
+                ? `${turn.artifact.content.slice(0, 800)}…`
+                : turn.artifact.content}
+            </pre>
           </div>
         </div>
-        <span className="ml-3 mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary">
-          <User className="h-4 w-4" />
+        <span className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary">
+          <User className="h-4 w-4 text-muted-foreground" />
         </span>
       </div>
 
-      {/* Assistant bubble */}
+      {/* Agent bubble (left) */}
       <div className="flex gap-3">
-        <span
-          className={cn(
-            "mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full",
-            turn.loading
-              ? "bg-accent/30 text-accent-foreground"
-              : "bg-accent text-accent-foreground",
-          )}
-        >
-          <Icon className="h-4 w-4" />
-        </span>
-        <div className="min-w-0 flex-1">
+        <AgentAvatar pulse={turn.loading} />
+        <div className="min-w-0 flex-1 space-y-3">
           {turn.loading && (
-            <EvaluationProgress
+            <ThinkingIndicator
               active
               artifactType={turn.artifact.artifact_type}
               consistency={turn.artifact.consistency ?? "high"}
+            />
+          )}
+          {!turn.loading && elapsed != null && (
+            <ThinkingIndicator
+              active={false}
+              artifactType={turn.artifact.artifact_type}
+              consistency={turn.artifact.consistency ?? "high"}
+              doneMs={elapsed}
             />
           )}
           {turn.error && (

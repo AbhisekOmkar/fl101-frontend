@@ -442,13 +442,21 @@ function pct(num: number, denom: number): string {
   return `${Math.round((num / denom) * 100)}`;
 }
 
+/** Always returns 30 bars — pads with zeros on the left so the chart never collapses to a wall. */
 function barData(stats: DashboardStats | null): number[] {
+  const days = 30;
   if (!stats || stats.timeline.length === 0) {
     return [3, 5, 4, 6, 5, 8, 7, 9, 6, 8, 5, 7, 10, 8, 9, 11, 7, 10, 8, 12, 9, 11, 8, 13, 10, 9, 7, 12, 11, 9];
   }
-  return stats.timeline.map((t) => t.count + Math.max(1, t.avg_score / 2));
+  const values = stats.timeline.map(
+    (t) => t.count + Math.max(0, t.avg_score / 2),
+  );
+  if (values.length >= days) return values.slice(-days);
+  const padded = Array<number>(days - values.length).fill(0).concat(values);
+  return padded;
 }
 
+/** Pipeline sparkline — always returns `count` points; zero-pads sparse data. */
 function generateBars(
   stats: DashboardStats | null,
   count: number,
@@ -459,11 +467,9 @@ function generateBars(
       Math.max(1, Math.round((Math.sin(i / 1.5) + 1.5) * 5 * scale)),
     );
   }
-  const tl = stats.timeline;
-  return Array.from({ length: count }, (_, i) => {
-    const t = tl[i % tl.length];
-    return Math.max(1, Math.round(t.count * scale));
-  });
+  const values = stats.timeline.map((t) => Math.max(0, t.count * scale));
+  if (values.length >= count) return values.slice(-count);
+  return Array<number>(count - values.length).fill(0).concat(values);
 }
 
 function byType(stats: DashboardStats | null) {

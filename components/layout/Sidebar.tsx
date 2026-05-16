@@ -38,7 +38,7 @@ export function Sidebar() {
   }, [pathname]);
 
   return (
-    <aside className="hidden md:flex md:w-64 md:flex-col md:border-r md:bg-card">
+    <aside className="sticky top-0 hidden h-screen md:flex md:w-64 md:flex-col md:border-r md:bg-card">
       {/* Brand */}
       <div className="flex h-16 shrink-0 items-center gap-2 px-5">
         <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">

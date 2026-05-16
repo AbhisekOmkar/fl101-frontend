@@ -27,11 +27,12 @@ const nav = [
 export function Sidebar() {
   const pathname = usePathname();
   const [recents, setRecents] = useState<EvaluationListItem[]>([]);
+  const onLoginPage = !!pathname?.startsWith("/login");
 
-  // The login page renders a full-bleed splash, no sidebar.
-  if (pathname?.startsWith("/login")) return null;
-
+  // All hooks must run on every render — keep this useEffect unconditional and
+  // gate the side-effect inside it. The conditional return comes AFTER.
   useEffect(() => {
+    if (onLoginPage) return;
     let alive = true;
     api.listEvaluations(10).then(
       (r) => alive && setRecents(r.items),
@@ -40,7 +41,10 @@ export function Sidebar() {
     return () => {
       alive = false;
     };
-  }, [pathname]);
+  }, [pathname, onLoginPage]);
+
+  // The login page renders a full-bleed splash, no sidebar.
+  if (onLoginPage) return null;
 
   return (
     <aside className="sticky top-0 hidden h-screen md:flex md:w-64 md:flex-col md:border-r md:bg-card">

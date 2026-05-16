@@ -1,13 +1,13 @@
 "use client";
-import { useState } from "react";
-import { Sparkles, Wand2 } from "lucide-react";
-import { Header } from "@/components/layout/Header";
-import { ArtifactInputForm } from "@/components/evaluator/ArtifactInput";
+import { useEffect, useRef, useState } from "react";
+import { BookOpen, Code2, FileText, Sparkles, User } from "lucide-react";
+import { ChatComposer, ModeSelector } from "@/components/evaluator/ChatComposer";
 import { ResultsPanel } from "@/components/evaluator/ResultsPanel";
 import { EvaluationProgress } from "@/components/evaluator/EvaluationProgress";
 import { ErrorAlert } from "@/components/evaluator/ErrorAlert";
-import { Card, CardContent } from "@/components/ui/card";
+import { Header } from "@/components/layout/Header";
 import { api, ApiException } from "@/lib/api";
+import { cn } from "@/lib/utils";
 import type {
   ApiError,
   ArtifactInput,
@@ -16,71 +16,116 @@ import type {
   EvaluationResponse,
 } from "@/lib/types";
 
+interface Turn {
+  id: string;
+  artifact: ArtifactInput;
+  result: EvaluationResponse | null;
+  error: ApiError | null;
+  loading: boolean;
+}
+
+const TYPE_META: Record<ArtifactType, { icon: typeof FileText; label: string }> = {
+  brief: { icon: FileText, label: "Brief" },
+  draft: { icon: BookOpen, label: "Draft" },
+  code: { icon: Code2, label: "Code" },
+};
+
 export default function EvaluatePage() {
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<EvaluationResponse | null>(null);
-  const [error, setError] = useState<ApiError | null>(null);
-  const [progressMeta, setProgressMeta] = useState<{
-    type: ArtifactType;
-    consistency: ConsistencyMode;
-  }>({ type: "brief", consistency: "high" });
+  const [turns, setTurns] = useState<Turn[]>([]);
+  const [consistency, setConsistency] = useState<ConsistencyMode>("high");
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const loading = turns.some((t) => t.loading);
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo({
+      top: scrollRef.current.scrollHeight,
+      behavior: "smooth",
+    });
+  }, [turns]);
 
   const submit = async (input: ArtifactInput) => {
-    setLoading(true);
-    setResult(null);
-    setError(null);
-    setProgressMeta({
-      type: input.artifact_type,
-      consistency: input.consistency ?? "high",
-    });
+    const id =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : Math.random().toString(36).slice(2);
+    setTurns((prev) => [
+      ...prev,
+      { id, artifact: input, result: null, error: null, loading: true },
+    ]);
+
     try {
       const r = await api.evaluate(input);
-      setResult(r);
+      setTurns((prev) =>
+        prev.map((t) =>
+          t.id === id ? { ...t, result: r, loading: false } : t,
+        ),
+      );
     } catch (e) {
-      if (e instanceof ApiException) setError(e.payload);
-      else
-        setError({
-          error_code: "CLIENT_ERROR",
-          message: e instanceof Error ? e.message : "Unknown error",
-        });
-    } finally {
-      setLoading(false);
+      const err: ApiError =
+        e instanceof ApiException
+          ? e.payload
+          : {
+              error_code: "CLIENT_ERROR",
+              message: e instanceof Error ? e.message : "Unknown error",
+            };
+      setTurns((prev) =>
+        prev.map((t) => (t.id === id ? { ...t, error: err, loading: false } : t)),
+      );
     }
   };
 
+  const empty = turns.length === 0;
+
   return (
     <>
-      <Header
-        title="Evaluate"
-        subtitle="Submit an artifact and receive rubric-anchored feedback."
-        searchPlaceholder="Search past evaluations…"
-      />
-      <div className="mx-auto w-full max-w-[1400px] p-6 lg:p-8">
-        <div className="grid gap-6 lg:grid-cols-12">
-          <div className="min-w-0 space-y-4 lg:col-span-5 xl:col-span-4">
-            <div className="lg:sticky lg:top-20 space-y-4">
-              <ArtifactInputForm loading={loading} onSubmit={submit} />
-              {loading && (
-                <EvaluationProgress
-                  active={loading}
-                  artifactType={progressMeta.type}
-                  consistency={progressMeta.consistency}
-                />
-              )}
-            </div>
+      <Header title="Evaluate" />
+      <div className="flex h-[calc(100vh-4rem)] flex-col">
+        {/* Mode selector strip */}
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b bg-background/85 px-6 py-3 backdrop-blur">
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Mode
+            </span>
+            <ModeSelector
+              value={consistency}
+              onChange={setConsistency}
+              disabled={loading}
+            />
           </div>
+          <span className="text-[11px] text-muted-foreground">
+            {turns.length} {turns.length === 1 ? "turn" : "turns"} this session
+          </span>
+        </div>
 
-          <div className="min-w-0 space-y-4 lg:col-span-7 xl:col-span-8">
-            {error && (
-              <ErrorAlert
-                errorCode={error.error_code}
-                message={error.message}
-                suggested={error.suggested_type ?? null}
-              />
-            )}
-            {!result && !error && !loading && <EmptyState />}
-            {loading && !result && <LoadingHero />}
-            {result && <ResultsPanel result={result} />}
+        {/* Conversation area */}
+        <div
+          ref={scrollRef}
+          className="min-h-0 flex-1 overflow-y-auto"
+        >
+          {empty ? (
+            <EmptyHero />
+          ) : (
+            <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-6 sm:px-6">
+              {turns.map((t) => (
+                <ConversationTurn key={t.id} turn={t} />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Composer */}
+        <div className="shrink-0 border-t bg-background/85 backdrop-blur">
+          <div className="mx-auto w-full max-w-3xl px-4 py-4 sm:px-6">
+            <ChatComposer
+              loading={loading}
+              onSubmit={submit}
+              consistency={consistency}
+            />
+            <p className="mt-2 text-center text-[11px] text-muted-foreground">
+              fl101 critic returns rubric scores, gaps, and the single next-best step.
+              Mode applies to the next message.
+            </p>
           </div>
         </div>
       </div>
@@ -88,76 +133,103 @@ export default function EvaluatePage() {
   );
 }
 
-function EmptyState() {
+function EmptyHero() {
   return (
-    <Card className="overflow-hidden border-dashed bg-card">
-      <CardContent className="flex flex-col items-center justify-center gap-4 py-20 text-center">
-        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-          <Wand2 className="h-6 w-6" />
-        </div>
-        <div className="space-y-1">
-          <p className="text-lg font-semibold tracking-tight">Ready when you are.</p>
-          <p className="mx-auto max-w-sm text-sm text-muted-foreground">
-            Pick an artifact type on the left, paste your content, and the critic will
-            return rubric scores, gaps, and the single next-best step.
-          </p>
-        </div>
-        <p className="flex items-center gap-1.5 rounded-full border bg-card px-3 py-1 text-xs text-muted-foreground">
-          <Sparkles className="h-3 w-3 text-primary" />
-          Defaults to high-consistency mode (3 samples in parallel)
+    <div className="flex h-full flex-col items-center justify-center gap-6 px-6 py-16 text-center">
+      <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-accent text-accent-foreground">
+        <Sparkles className="h-6 w-6" />
+      </span>
+      <div className="space-y-2">
+        <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+          What do you want me to evaluate?
+        </h2>
+        <p className="mx-auto max-w-lg text-sm text-muted-foreground">
+          Paste a brief, a draft, or a code snippet. I&apos;ll score it against a
+          rubric, name the gaps, and give you the single next-best step.
         </p>
-      </CardContent>
-    </Card>
+      </div>
+      <div className="grid w-full max-w-2xl gap-2 sm:grid-cols-3">
+        {(["brief", "draft", "code"] as ArtifactType[]).map((t) => {
+          const Icon = TYPE_META[t].icon;
+          return (
+            <div
+              key={t}
+              className="flex items-start gap-3 rounded-xl border bg-card p-3 text-left"
+            >
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-secondary">
+                <Icon className="h-4 w-4" />
+              </span>
+              <div>
+                <p className="text-sm font-semibold capitalize">{t}</p>
+                <p className="text-[11px] text-muted-foreground">
+                  {t === "brief" && "PRD, design doc, plan"}
+                  {t === "draft" && "Essay, post, analysis"}
+                  {t === "code" && "Function, snippet, module"}
+                </p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
-/**
- * Right-pane companion to the EvaluationProgress card on the left.
- * Shows skeleton "placeholders" for the result panel so the page never looks empty.
- */
-function LoadingHero() {
-  return (
-    <div className="space-y-5">
-      <Card className="overflow-hidden border-primary/20 bg-gradient-to-br from-primary/[0.06] via-card to-card">
-        <CardContent className="p-6 lg:p-7">
-          <div className="flex items-start gap-4">
-            <span className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-sm">
-              <Sparkles className="h-5 w-5" />
-              <span className="absolute inset-0 animate-ping rounded-2xl bg-primary/30" />
-            </span>
-            <div className="min-w-0 flex-1 space-y-2">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-primary">
-                Next best step
-              </span>
-              <div className="space-y-2.5">
-                <div className="shimmer-bg h-5 w-3/4 rounded" />
-                <div className="shimmer-bg h-4 w-5/6 rounded" />
-                <div className="shimmer-bg h-4 w-2/3 rounded" />
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+function ConversationTurn({ turn }: { turn: Turn }) {
+  const Icon = TYPE_META[turn.artifact.artifact_type].icon;
+  const label = TYPE_META[turn.artifact.artifact_type].label;
 
-      <Card>
-        <CardContent className="space-y-4 p-6">
-          <div className="space-y-2">
-            <div className="shimmer-bg h-5 w-1/2 rounded" />
-            <div className="shimmer-bg h-3.5 w-4/5 rounded" />
+  return (
+    <div className="space-y-4">
+      {/* User bubble */}
+      <div className="flex justify-end">
+        <div className="max-w-[85%] space-y-2">
+          <div className="flex items-center justify-end gap-2 text-[11px] text-muted-foreground">
+            <span className="capitalize">{label}</span>
+            <span>·</span>
+            <span>{turn.artifact.consistency} mode</span>
           </div>
-          <div className="space-y-3 pt-2">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <div className="shimmer-bg h-3.5 w-24 rounded" />
-                  <div className="shimmer-bg h-3.5 w-8 rounded" />
-                </div>
-                <div className="shimmer-bg h-1.5 w-full rounded-full" />
-              </div>
-            ))}
+          <div className="bubble whitespace-pre-wrap bg-primary text-primary-foreground">
+            {turn.artifact.content.length > 800
+              ? `${turn.artifact.content.slice(0, 800)}…`
+              : turn.artifact.content}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+        <span className="ml-3 mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary">
+          <User className="h-4 w-4" />
+        </span>
+      </div>
+
+      {/* Assistant bubble */}
+      <div className="flex gap-3">
+        <span
+          className={cn(
+            "mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full",
+            turn.loading
+              ? "bg-accent/30 text-accent-foreground"
+              : "bg-accent text-accent-foreground",
+          )}
+        >
+          <Icon className="h-4 w-4" />
+        </span>
+        <div className="min-w-0 flex-1">
+          {turn.loading && (
+            <EvaluationProgress
+              active
+              artifactType={turn.artifact.artifact_type}
+              consistency={turn.artifact.consistency ?? "high"}
+            />
+          )}
+          {turn.error && (
+            <ErrorAlert
+              errorCode={turn.error.error_code}
+              message={turn.error.message}
+              suggested={turn.error.suggested_type ?? null}
+            />
+          )}
+          {turn.result && <ResultsPanel result={turn.result} />}
+        </div>
+      </div>
     </div>
   );
 }

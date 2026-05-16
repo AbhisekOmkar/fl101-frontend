@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { HelpCircle, Search, Sparkles } from "lucide-react";
+import { Search, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface HeaderProps {
@@ -12,8 +12,8 @@ interface HeaderProps {
 export function Header({ title, subtitle, searchPlaceholder = "Search" }: HeaderProps) {
   return (
     <header className="sticky top-0 z-10 border-b bg-background/85 backdrop-blur">
-      <div className="grid h-16 grid-cols-3 items-center gap-4 px-6">
-        {/* Left: title */}
+      <div className="grid h-16 grid-cols-[1fr_auto] items-center gap-4 px-6 md:grid-cols-3">
+        {/* Title */}
         <div className="min-w-0">
           <h1 className="truncate text-base font-semibold tracking-tight">{title}</h1>
           {subtitle ? (
@@ -21,7 +21,7 @@ export function Header({ title, subtitle, searchPlaceholder = "Search" }: Header
           ) : null}
         </div>
 
-        {/* Center: search */}
+        {/* Search */}
         <div className="relative mx-auto hidden w-full max-w-md md:block">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
@@ -31,13 +31,8 @@ export function Header({ title, subtitle, searchPlaceholder = "Search" }: Header
           />
         </div>
 
-        {/* Right: actions */}
+        {/* CTA */}
         <div className="flex items-center justify-end gap-2">
-          <Button asChild variant="ghost" size="sm" className="text-muted-foreground">
-            <Link href="https://platform.openai.com/docs" target="_blank">
-              <HelpCircle className="h-4 w-4" /> Help Center
-            </Link>
-          </Button>
           <Button asChild variant="default" size="sm">
             <Link href="/evaluate">
               <Sparkles className="h-4 w-4" /> New evaluation

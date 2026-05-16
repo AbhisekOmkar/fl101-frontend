@@ -1,20 +1,22 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import {
-  ChevronDown,
   History,
   LayoutDashboard,
+  MessageSquare,
   ScrollText,
   Sparkles,
   Target,
-  Wand2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { api } from "@/lib/api";
+import type { EvaluationListItem } from "@/lib/types";
 
 const nav = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/evaluate", label: "Evaluate", icon: Wand2 },
+  { href: "/evaluate", label: "Evaluate", icon: MessageSquare, badge: undefined as string | undefined },
   { href: "/history", label: "History", icon: History },
   { href: "/eval", label: "Quality", icon: Target },
   { href: "/rubrics", label: "Rubrics", icon: ScrollText },
@@ -22,61 +24,101 @@ const nav = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const [recents, setRecents] = useState<EvaluationListItem[]>([]);
+
+  useEffect(() => {
+    let alive = true;
+    api.listEvaluations(10).then(
+      (r) => alive && setRecents(r.items),
+      () => undefined,
+    );
+    return () => {
+      alive = false;
+    };
+  }, [pathname]);
 
   return (
     <aside className="hidden md:flex md:w-64 md:flex-col md:border-r md:bg-card">
-      {/* Workspace switcher */}
-      <div className="flex h-16 items-center gap-2 px-4">
-        <button
-          type="button"
-          className="flex w-full items-center justify-between gap-2 rounded-lg border px-3 py-2 transition-colors hover:bg-secondary/60"
-        >
-          <span className="flex items-center gap-2">
-            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
-              <Sparkles className="h-3.5 w-3.5" />
-            </span>
-            <span className="text-sm font-semibold tracking-tight">fl101</span>
-          </span>
-          <ChevronDown className="h-4 w-4 text-muted-foreground" />
-        </button>
+      {/* Brand */}
+      <div className="flex h-16 shrink-0 items-center gap-2 px-5">
+        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+          <Sparkles className="h-3.5 w-3.5" />
+        </span>
+        <span className="text-sm font-semibold tracking-tight">fl101 Critic</span>
       </div>
 
-      <nav className="flex-1 space-y-1 p-3">
+      {/* Nav */}
+      <nav className="space-y-0.5 px-3">
         {nav.map((item) => {
           const active =
-            item.href === "/"
-              ? pathname === "/"
-              : pathname?.startsWith(item.href);
+            item.href === "/" ? pathname === "/" : pathname?.startsWith(item.href);
           const Icon = item.icon;
           return (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
-                "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors",
+                "group flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
                 active
-                  ? "bg-primary font-medium text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:bg-secondary hover:text-foreground",
+                  ? "bg-secondary font-semibold text-foreground"
+                  : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
               )}
             >
-              <Icon
-                className={cn(
-                  "h-4 w-4 shrink-0",
-                  active ? "text-primary-foreground" : "text-muted-foreground group-hover:text-foreground",
-                )}
-              />
-              {item.label}
+              <span className="flex items-center gap-3">
+                <Icon className="h-4 w-4 shrink-0" />
+                {item.label}
+              </span>
+              {item.badge && (
+                <span className="rounded-md bg-accent px-1.5 py-0.5 text-[10px] font-semibold text-accent-foreground">
+                  {item.badge}
+                </span>
+              )}
             </Link>
           );
         })}
       </nav>
 
+      {/* Recents */}
+      <div className="mt-6 flex min-h-0 flex-1 flex-col px-3">
+        <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Recents
+        </p>
+        <div className="min-h-0 flex-1 space-y-0.5 overflow-y-auto pr-1">
+          {recents.length === 0 ? (
+            <p className="px-3 py-2 text-xs text-muted-foreground">
+              Your recent evaluations will appear here.
+            </p>
+          ) : (
+            recents.map((r) => (
+              <Link
+                key={r.evaluation_id}
+                href={`/history?id=${r.evaluation_id}`}
+                className="block rounded-lg px-3 py-2 text-xs transition-colors hover:bg-secondary/60"
+              >
+                <p className="truncate font-medium text-foreground">
+                  {r.title || "Untitled artifact"}
+                </p>
+                <p className="truncate text-[11px] text-muted-foreground">
+                  {r.artifact_type} · score {r.overall_score.toFixed(1)}
+                </p>
+              </Link>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Profile footer */}
       <div className="border-t p-4">
-        <div className="rounded-xl border bg-secondary/40 p-3 text-xs">
-          <p className="font-medium text-foreground">Proof-of-work</p>
-          <p className="mt-1 text-muted-foreground">
-            Calibrated feedback in seconds — the single next-best step.
-          </p>
+        <div className="flex items-center gap-3">
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-[11px] font-semibold text-accent-foreground">
+            AP
+          </span>
+          <div className="min-w-0 leading-tight">
+            <p className="truncate text-xs font-semibold">Abhisek Prasad</p>
+            <p className="truncate text-[11px] text-muted-foreground">
+              applied-ai assessment
+            </p>
+          </div>
         </div>
       </div>
     </aside>
